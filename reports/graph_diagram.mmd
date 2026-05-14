@@ -1,0 +1,118 @@
+flowchart TD
+    %% =========================
+    %% MAIN FLOW
+    %% =========================
+    START([START]) --> intake[Receive User Request]
+    intake --> preprocess[Preprocess Input<br/>Normalize / Validate / Sanitize]
+    preprocess --> classify{Classify Request Type}
+
+    %% =========================
+    %% ROUTING
+    %% =========================
+    classify -- simple --> answer_simple[Generate Direct Answer]
+
+    classify -- tool --> tool_validation[Validate Tool Parameters]
+
+    classify -- missing_info --> clarify[Ask For Missing Information]
+
+    classify -- risky --> risk_check[Risk & Permission Check]
+
+    classify -- error --> retry_manager[Retry Manager]
+
+    %% =========================
+    %% SIMPLE FLOW
+    %% =========================
+    answer_simple --> response_format[Format Response]
+
+    %% =========================
+    %% TOOL FLOW
+    %% =========================
+    tool_validation --> validation_ok{Valid Input?}
+
+    validation_ok -- no --> clarify
+
+    validation_ok -- yes --> tool_execution[Execute Tool / API Call]
+
+    tool_execution --> evaluate{Execution Result}
+
+    evaluate -- success --> response_builder[Build Final Response]
+
+    evaluate -- partial --> fallback_response[Generate Partial / Fallback Response]
+
+    evaluate -- timeout --> retry_manager
+
+    evaluate -- failure --> error_handler[Handle Error]
+
+    %% =========================
+    %% RISKY FLOW
+    %% =========================
+    risk_check --> approval{Human Approval Required?}
+
+    approval -- approved --> audit_log[Write Audit Log]
+
+    approval -- rejected --> rejection_response[Explain Rejection]
+
+    audit_log --> tool_execution
+
+    rejection_response --> finalize
+
+    %% =========================
+    %% RETRY FLOW
+    %% =========================
+    retry_manager --> retry_check{attempt < max_attempts?}
+
+    retry_check -- yes --> backoff[Wait / Exponential Backoff]
+
+    backoff --> tool_execution
+
+    retry_check -- no --> dead_letter[Dead Letter Queue / Escalation]
+
+    %% =========================
+    %% ERROR HANDLING
+    %% =========================
+    error_handler --> recoverable{Recoverable Error?}
+
+    recoverable -- yes --> retry_manager
+
+    recoverable -- no --> dead_letter
+
+    %% =========================
+    %% CLARIFICATION FLOW
+    %% =========================
+    clarify --> clarification_received{User Replied?}
+
+    clarification_received -- yes --> preprocess
+
+    clarification_received -- no --> timeout_close[Close Request Due To Inactivity]
+
+    %% =========================
+    %% FINALIZATION
+    %% =========================
+    response_builder --> response_format
+
+    fallback_response --> response_format
+
+    response_format --> finalize[Finalize Session]
+
+    dead_letter --> incident_log[Create Incident Log]
+
+    incident_log --> finalize
+
+    timeout_close --> finalize
+
+    finalize --> metrics[Store Metrics & Monitoring]
+
+    metrics --> END([END])
+
+    %% =========================
+    %% STYLES
+    %% =========================
+    classDef process fill:#e3f2fd,stroke:#1e88e5,color:#000,stroke-width:1px;
+    classDef decision fill:#fff3e0,stroke:#fb8c00,color:#000,stroke-width:1px;
+    classDef danger fill:#ffebee,stroke:#e53935,color:#000,stroke-width:1px;
+    classDef success fill:#e8f5e9,stroke:#43a047,color:#000,stroke-width:1px;
+
+    class intake,preprocess,tool_validation,tool_execution,response_builder,response_format,clarify,backoff,metrics,audit_log,error_handler,incident_log process;
+    class classify,validation_ok,evaluate,approval,retry_check,recoverable,clarification_received decision;
+    class risk_check,retry_manager,dead_letter,rejection_response,timeout_close danger;
+    class answer_simple,finalize success;

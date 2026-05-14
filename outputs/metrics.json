@@ -1,0 +1,303 @@
+{
+  "lab_info": {
+    "title": "Day 08 LangGraph Workflow Lab",
+    "student": "Nguyen Tien Dat",
+    "architecture": "StateGraph",
+    "workflow_type": "multi-route-agent",
+    "features": [
+      "conditional routing",
+      "retry loop",
+      "human-in-the-loop approval",
+      "dead letter handling",
+      "checkpoint persistence",
+      "structured audit logging"
+    ]
+  },
+
+  "metrics_summary": {
+    "total_scenarios": 13,
+    "successful_scenarios": 13,
+    "failed_scenarios": 0,
+    "success_rate": 1.0,
+    "avg_nodes_visited": 6.6923076923076925,
+    "total_retries": 5,
+    "total_interrupts": 4,
+    "resume_success": false
+  },
+
+  "workflow_routes": {
+    "simple": {
+      "description": "Direct response without tool usage",
+      "target_node": "answer"
+    },
+    "tool": {
+      "description": "Tool execution workflow",
+      "target_node": "tool"
+    },
+    "missing_info": {
+      "description": "Clarification flow for incomplete requests",
+      "target_node": "clarify"
+    },
+    "risky": {
+      "description": "Approval-required actions",
+      "target_node": "risky_action"
+    },
+    "error": {
+      "description": "Retry and recovery workflow",
+      "target_node": "retry"
+    }
+  },
+
+  "retry_strategy": {
+    "max_default_attempts": 3,
+    "supports_backoff": true,
+    "dead_letter_enabled": true,
+    "retry_conditions": [
+      "timeout",
+      "transient failure",
+      "gateway error",
+      "temporary service unavailable"
+    ]
+  },
+
+  "approval_system": {
+    "enabled": true,
+    "interrupt_supported": true,
+    "approval_required_for": [
+      "refund",
+      "delete",
+      "cancel",
+      "revoke",
+      "external actions"
+    ]
+  },
+
+  "persistence": {
+    "supported_checkpointers": [
+      "memory",
+      "sqlite",
+      "postgres"
+    ],
+    "checkpoint_enabled": true,
+    "thread_based_recovery": true
+  },
+
+  "scenario_metrics": [
+    {
+      "scenario_id": "S01_simple",
+      "query_type": "simple request",
+      "success": true,
+      "expected_route": "simple",
+      "actual_route": "simple",
+      "nodes_visited": 4,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S02_tool",
+      "query_type": "tool request",
+      "success": true,
+      "expected_route": "tool",
+      "actual_route": "tool",
+      "nodes_visited": 6,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S03_missing",
+      "query_type": "missing information",
+      "success": true,
+      "expected_route": "missing_info",
+      "actual_route": "missing_info",
+      "nodes_visited": 4,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "clarification_requested",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S04_risky",
+      "query_type": "approval-required request",
+      "success": true,
+      "expected_route": "risky",
+      "actual_route": "risky",
+      "nodes_visited": 8,
+      "retry_count": 0,
+      "interrupt_count": 1,
+      "approval_required": true,
+      "approval_observed": true,
+      "latency_ms": 0,
+      "status": "approved_and_completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S05_error",
+      "query_type": "recoverable failure",
+      "success": true,
+      "expected_route": "error",
+      "actual_route": "error",
+      "nodes_visited": 10,
+      "retry_count": 2,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "recovered_after_retry",
+      "errors": [
+        "transient failure attempt=1",
+        "transient failure attempt=2"
+      ]
+    },
+
+    {
+      "scenario_id": "S06_delete",
+      "query_type": "destructive action",
+      "success": true,
+      "expected_route": "risky",
+      "actual_route": "risky",
+      "nodes_visited": 8,
+      "retry_count": 0,
+      "interrupt_count": 1,
+      "approval_required": true,
+      "approval_observed": true,
+      "latency_ms": 0,
+      "status": "approved_and_completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S07_dead_letter",
+      "query_type": "dead letter escalation",
+      "success": true,
+      "expected_route": "error",
+      "actual_route": "error",
+      "nodes_visited": 5,
+      "retry_count": 1,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "dead_letter",
+      "errors": [
+        "transient failure attempt=1",
+        "dead_letter after attempt=1"
+      ]
+    },
+
+    {
+      "scenario_id": "S08_cancel",
+      "query_type": "subscription cancellation",
+      "success": true,
+      "expected_route": "risky",
+      "actual_route": "risky",
+      "nodes_visited": 8,
+      "retry_count": 0,
+      "interrupt_count": 1,
+      "approval_required": true,
+      "approval_observed": true,
+      "latency_ms": 0,
+      "status": "approved_and_completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S09_track_order",
+      "query_type": "tracking request",
+      "success": true,
+      "expected_route": "tool",
+      "actual_route": "tool",
+      "nodes_visited": 6,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S10_vague_issue",
+      "query_type": "vague support issue",
+      "success": true,
+      "expected_route": "missing_info",
+      "actual_route": "missing_info",
+      "nodes_visited": 4,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "clarification_requested",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S11_crash",
+      "query_type": "service crash recovery",
+      "success": true,
+      "expected_route": "error",
+      "actual_route": "error",
+      "nodes_visited": 10,
+      "retry_count": 2,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "recovered_after_retry",
+      "errors": [
+        "transient failure attempt=1",
+        "transient failure attempt=2"
+      ]
+    },
+
+    {
+      "scenario_id": "S12_revoke",
+      "query_type": "access revocation",
+      "success": true,
+      "expected_route": "risky",
+      "actual_route": "risky",
+      "nodes_visited": 8,
+      "retry_count": 0,
+      "interrupt_count": 1,
+      "approval_required": true,
+      "approval_observed": true,
+      "latency_ms": 0,
+      "status": "approved_and_completed",
+      "errors": []
+    },
+
+    {
+      "scenario_id": "S13_find_ticket",
+      "query_type": "ticket lookup",
+      "success": true,
+      "expected_route": "tool",
+      "actual_route": "tool",
+      "nodes_visited": 6,
+      "retry_count": 0,
+      "interrupt_count": 0,
+      "approval_required": false,
+      "approval_observed": false,
+      "latency_ms": 0,
+      "status": "completed",
+      "errors": []
+    }
+  ]
+}

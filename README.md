@@ -1,6 +1,7 @@
 # Day 08 Lab — LangGraph Agentic Orchestration
 
 Full báo cáo tại: [reports/lab_report.md](reports/lab_report.md)
+
 Build a production-style LangGraph workflow for a support-ticket agent with state management, conditional routing, retry loops, human-in-the-loop approval, persistence, and metrics.
 
 This is a **starter skeleton**. Core logic is left as `TODO(student)` — implement your own design.
